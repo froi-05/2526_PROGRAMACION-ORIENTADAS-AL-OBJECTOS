@@ -85,7 +85,8 @@ if __name__ == "__main__":
     # creo algunos libros
     libro1 = Libro("Cien años de soledad", "Gabriel García Márquez", 1967)
     libro2 = Libro("El principito", "Antoine de Saint-Exupéry", 1943)
-    libro3 = Libro("Rayuela", "Julio Cortázar", 1963)
+    libro3 \
+        = Libro("Rayuela", "Julio Cortázar", 1963)
 
     # los agrego al catálogo
     biblioteca.agregar_libro(libro1)
