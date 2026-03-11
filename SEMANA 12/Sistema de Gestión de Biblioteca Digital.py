@@ -1,5 +1,5 @@
 # Biblioteca Digital - REQUISITOS EXACTOS
-# Autor: Froilán Tejada - Quito, 8/mar/2026
+# Autor: Froilán Tejada - Quito, 18/mar/2026
 # Libro: tupla (titulo,autor), Usuario: lista prestados
 # Biblioteca: dict{ISBN:Libro}, set IDs usuarios
 
