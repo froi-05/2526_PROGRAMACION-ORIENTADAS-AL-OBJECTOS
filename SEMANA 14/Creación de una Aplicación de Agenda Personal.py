@@ -4,181 +4,169 @@
 # Treeview eventos + Date Entry + Frames organizados
 
 import tkinter as tk
+from datetime import datetime
 from tkinter import ttk, messagebox
 
 
-class AgendaGUI:
+class Evento:
+    """Clase para representar un evento de la agenda"""
+
+    def __init__(self, fecha, hora, descripcion):
+        self.fecha = fecha
+        self.hora = hora
+        self.descripcion = descripcion
+
+    def __str__(self):
+        return f"{self.fecha} - {self.hora}: {self.descripcion}"
+
+
+class AgendaPersonal:
+    """Clase principal de la aplicación de agenda personal"""
+
     def __init__(self, root):
         self.root = root
-        self.root.title("📅 AGENDA PERSONAL - Mis Eventos")
-        self.root.geometry("700x500")
+        self.root.title("Mi Agenda Personal")
+        self.root.geometry("750x550")
+        self.root.resizable(True, True)
 
-        # Lista eventos: {id: {'fecha','hora','desc'}}
-        self.eventos = {}
-        self.next_id = 1
+        # Lista para almacenar los eventos
+        self.eventos = []
 
+        # Crear las 4 secciones
         self.crear_interfaz()
 
     def crear_interfaz(self):
-        # FRAME 1: TÍTULO
-        frame_titulo = tk.Frame(self.root, bg="#2c3e50", height=60)
-        frame_titulo.pack(fill="x")
-        frame_titulo.pack_propagate(False)
-        tk.Label(frame_titulo, text="📅 AGENDA PERSONAL", font=("Arial", 18, "bold"),
-                 bg="#2c3e50", fg="white").pack(expand=True)
+        """Crea las 4 secciones organizadas de la agenda"""
 
-        # FRAME 2: INPUTS (Entry fecha/hora/descripción)
-        frame_inputs = tk.LabelFrame(self.root, text="Nuevo Evento", font=("Arial", 12, "bold"))
-        frame_inputs.pack(pady=10, padx=10, fill="x")
+        # ===== SECCIÓN 1: CABECERA =====
+        seccion1 = ttk.LabelFrame(self.root, text="CABECERA", padding="15")
+        seccion1.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=5, padx=10)
+        titulo = ttk.Label(seccion1, text="📅 AGENDA PERSONAL", font=("Arial", 18, "bold"))
+        titulo.grid(row=0, column=0)
 
-        # Fecha (DatePicker simple: Entry formato DD/MM/YYYY)
-        tk.Label(frame_inputs, text="Fecha (DD/MM):").grid(row=0, column=0, sticky="w", padx=5, pady=5)
-        self.entry_fecha = tk.Entry(frame_inputs, width=12, font=("Arial", 11))
-        self.entry_fecha.grid(row=0, column=1, padx=5, pady=5)
+        # ===== SECCIÓN 2: EVENTOS PROGRAMADOS =====
+        seccion2 = ttk.LabelFrame(self.root, text="EVENTOS PROGRAMADOS", padding="10")
+        seccion2.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), pady=5, padx=10)
 
-        tk.Label(frame_inputs, text="Hora (HH:MM):").grid(row=0, column=2, sticky="w", padx=5, pady=5)
-        self.entry_hora = tk.Entry(frame_inputs, width=10, font=("Arial", 11))
-        self.entry_hora.grid(row=0, column=3, padx=5, pady=5)
+        # TreeView con columnas
+        columnas = ("Fecha", "Hora", "Descripción")
+        self.tree = ttk.Treeview(seccion2, columns=columnas, show="headings", height=10)
 
-        tk.Label(frame_inputs, text="Descripción:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
-        self.entry_desc = tk.Entry(frame_inputs, width=50, font=("Arial", 11))
-        self.entry_desc.grid(row=1, column=1, columnspan=3, sticky="ew", padx=5, pady=5)
-        frame_inputs.columnconfigure(1, weight=1)
-
-        # Botones inputs
-        frame_botones_input = tk.Frame(frame_inputs)
-        frame_botones_input.grid(row=2, column=1, columnspan=3, pady=10)
-
-        self.btn_agregar = tk.Button(frame_botones_input, text="➕ AGREGAR EVENTO",
-                                     command=self.agregar_evento,
-                                     bg="#27ae60", fg="white", font=("Arial", 10, "bold"))
-        self.btn_agregar.pack(side="left", padx=5)
-
-        self.btn_limpiar = tk.Button(frame_botones_input, text="🧹 LIMPIAR CAMPOS",
-                                     command=self.limpiar_campos,
-                                     bg="#3498db", fg="white", font=("Arial", 10, "bold"))
-        self.btn_limpiar.pack(side="left", padx=5)
-
-        # FRAME 3: LISTA EVENTOS (Treeview)
-        frame_lista = tk.LabelFrame(self.root, text="Eventos Programados", font=("Arial", 12, "bold"))
-        frame_lista.pack(pady=10, padx=10, fill="both", expand=True)
-
-        # Treeview columnas: ID, Fecha, Hora, Descripción
-        columnas = ("ID", "Fecha", "Hora", "Descripción")
-        self.tree = ttk.Treeview(frame_lista, columns=columnas, show="headings", height=12)
-
-        # Definir headings
-        self.tree.heading("ID", text="ID")
         self.tree.heading("Fecha", text="Fecha")
         self.tree.heading("Hora", text="Hora")
         self.tree.heading("Descripción", text="Descripción")
 
-        # Columnas ancho
-        self.tree.column("ID", width=50)
-        self.tree.column("Fecha", width=100)
-        self.tree.column("Hora", width=80)
-        self.tree.column("Descripción", width=300)
+        self.tree.column("Fecha", width=110)
+        self.tree.column("Hora", width=90)
+        self.tree.column("Descripción", width=400)
 
-        # Scrollbars
-        v_scrollbar = ttk.Scrollbar(frame_lista, orient="vertical", command=self.tree.yview)
-        h_scrollbar = ttk.Scrollbar(frame_lista, orient="horizontal", command=self.tree.xview)
-        self.tree.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
+        # Scrollbar vertical
+        scrollbar = ttk.Scrollbar(seccion2, orient=tk.VERTICAL, command=self.tree.yview)
+        self.tree.configure(yscroll=scrollbar.set)
 
-        # Pack Treeview + scrolls
-        self.tree.grid(row=0, column=0, sticky="nsew")
-        v_scrollbar.grid(row=0, column=1, sticky="ns")
-        h_scrollbar.grid(row=1, column=0, sticky="ew")
-        frame_lista.grid_rowconfigure(0, weight=1)
-        frame_lista.grid_columnconfigure(0, weight=1)
+        self.tree.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
 
-        # Selección Treeview → Eliminar
-        self.tree.bind("<ButtonRelease-1>", self.seleccionar_evento)
+        # ===== SECCIÓN 3: NUEVO EVENTO =====
+        seccion3 = ttk.LabelFrame(self.root, text="NUEVO EVENTO", padding="10")
+        seccion3.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=5, padx=10)
 
-        # FRAME 4: BOTONES ACCIONES
-        frame_acciones = tk.Frame(self.root)
-        frame_acciones.pack(pady=10, fill="x")
+        # Campos de entrada
+        ttk.Label(seccion3, text="Fecha (DD/MM/YYYY):").grid(row=0, column=0, sticky=tk.W, pady=5, padx=(0, 10))
+        self.entry_fecha = ttk.Entry(seccion3, width=15, font=("Arial", 10))
+        self.entry_fecha.grid(row=0, column=1, pady=5, padx=5)
 
-        self.btn_eliminar = tk.Button(frame_acciones, text="🗑️ ELIMINAR SELECCIONADO",
-                                      command=self.eliminar_evento,
-                                      bg="#e74c3c", fg="white", font=("Arial", 10, "bold"))
-        self.btn_eliminar.pack(side="left", padx=10)
+        ttk.Label(seccion3, text="Hora (HH:MM):").grid(row=0, column=2, sticky=tk.W, padx=(20, 0), pady=5)
+        self.entry_hora = ttk.Entry(seccion3, width=10, font=("Arial", 10))
+        self.entry_hora.grid(row=0, column=3, pady=5, padx=5)
 
-        self.btn_salir = tk.Button(frame_acciones, text="❌ SALIR",
-                                   command=self.root.quit,
-                                   bg="#95a5a6", fg="white", font=("Arial", 10, "bold"))
-        self.btn_salir.pack(side="right", padx=10)
+        ttk.Label(seccion3, text="Descripción:").grid(row=1, column=0, sticky=tk.W, pady=(10, 5), padx=(0, 10))
+        self.entry_desc = ttk.Entry(seccion3, width=50, font=("Arial", 10))
+        self.entry_desc.grid(row=1, column=1, columnspan=3, sticky=(tk.W, tk.E), pady=5, padx=5)
+
+        seccion3.columnconfigure(1, weight=1)
+
+        # ===== SECCIÓN 4: ACCIONES =====
+        seccion4 = ttk.LabelFrame(self.root, text="ACCIONES", padding="15")
+        seccion4.grid(row=3, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=10, padx=10)
+
+        ttk.Button(seccion4, text="Agregar Evento", command=self.agregar_evento).grid(row=0, column=0, padx=8, pady=5)
+        ttk.Button(seccion4, text="Eliminar Seleccionado", command=self.eliminar_evento).grid(row=0, column=1, padx=8,
+                                                                                              pady=5)
+        ttk.Button(seccion4, text="Limpiar Todo", command=self.limpiar_todo).grid(row=0, column=2, padx=8, pady=5)
+        ttk.Button(seccion4, text="Salir", command=self.root.quit).grid(row=0, column=3, padx=8, pady=5)
+
+        # Configuración de expansión
+        self.root.columnconfigure(0, weight=1)
+        self.root.rowconfigure(1, weight=1)
+        seccion2.columnconfigure(0, weight=1)
+        seccion2.rowconfigure(0, weight=1)
 
     def agregar_evento(self):
-        """Agrega evento validando formato fecha/hora"""
+        """Agrega nuevo evento validando formato"""
         fecha = self.entry_fecha.get().strip()
         hora = self.entry_hora.get().strip()
         desc = self.entry_desc.get().strip()
 
-        # Validaciones
+        # Validar campos vacíos
         if not all([fecha, hora, desc]):
             messagebox.showwarning("Error", "¡Completa todos los campos!")
             return
 
+        # Validar formatos
         try:
-            # Validar fecha formato DD/MM
-            if len(fecha) != 5 or fecha[2] != "/":
-                raise ValueError("Fecha debe ser DD/MM")
-            dia, mes = map(int, fecha.split("/"))
-            if not (1 <= dia <= 31 and 1 <= mes <= 12):
-                raise ValueError("Fecha inválida")
-
-            # Validar hora HH:MM
-            if len(hora) != 5 or hora[2] != ":":
-                raise ValueError("Hora debe ser HH:MM")
-            hora_int, minuto = map(int, hora.split(":"))
-            if not (0 <= hora_int <= 23 and 0 <= minuto <= 59):
-                raise ValueError("Hora inválida")
-
-        except ValueError as e:
-            messagebox.showerror("Formato", f"Error: {e}")
+            datetime.strptime(fecha, "%d/%m/%Y")
+            datetime.strptime(hora, "%H:%M")
+        except ValueError:
+            messagebox.showerror("Error", "Formato:\n• Fecha: DD/MM/YYYY\n• Hora: HH:MM")
             return
 
-        # AGREGAR a Treeview
-        evento_id = str(self.next_id)
-        self.eventos[evento_id] = {'fecha': fecha, 'hora': hora, 'desc': desc}
+        # Crear y agregar evento
+        evento = Evento(fecha, hora, desc)
+        self.eventos.append(evento)
+        self.tree.insert("", "end", values=(fecha, hora, desc))
 
-        self.tree.insert("", "end", values=(evento_id, fecha, hora, desc))
-        self.next_id += 1
-
-        self.limpiar_campos()
-        messagebox.showinfo("¡Listo!", f"Evento '{desc[:20]}...' agregado ✓")
-
-    def eliminar_evento(self):
-        """Elimina evento seleccionado con confirmación"""
-        seleccion = self.tree.selection()
-        if not seleccion:
-            messagebox.showwarning("Atención", "¡Selecciona un evento primero!")
-            return
-
-        # Confirmación opcional
-        evento_sel = self.tree.item(seleccion)
-        desc = evento_sel['values'][3][:30]
-        if messagebox.askyesno("Confirmar", f"¿Eliminar?\n{desc}"):
-            evento_id = evento_sel['values'][0]
-            del self.eventos[evento_id]
-            self.tree.delete(seleccion)
-            messagebox.showinfo("Eliminado", "Evento borrado ✓")
-
-    def seleccionar_evento(self, event):
-        """Destaca selección Treeview"""
-        pass  # Solo visual
-
-    def limpiar_campos(self):
-        """Limpia todos Entries"""
+        # LIMPIAR CAMPOS AUTOMÁTICAMENTE
         self.entry_fecha.delete(0, tk.END)
         self.entry_hora.delete(0, tk.END)
         self.entry_desc.delete(0, tk.END)
-        self.entry_fecha.focus()
+
+        messagebox.showinfo("¡Éxito!", "Evento agregado correctamente ✓")
+
+    def eliminar_evento(self):
+        """Elimina el evento seleccionado"""
+        seleccion = self.tree.selection()
+
+        if not seleccion:
+            messagebox.showwarning("Advertencia", "¡Selecciona un evento de la lista!")
+            return
+
+        if messagebox.askyesno("Confirmar", "¿Eliminar este evento?"):
+            item = self.tree.index(seleccion[0])
+            self.tree.delete(seleccion[0])
+            if 0 <= item < len(self.eventos):
+                del self.eventos[item]
+            messagebox.showinfo("¡Listo!", "Evento eliminado ✓")
+
+    def limpiar_todo(self):
+        """Elimina todos los eventos"""
+        if not self.eventos:
+            messagebox.showinfo("Info", "La agenda ya está vacía")
+            return
+
+        if messagebox.askyesno("Confirmar", f"¿Eliminar TODOS los {len(self.eventos)} eventos?"):
+            # Limpiar TreeView
+            for item in self.tree.get_children():
+                self.tree.delete(item)
+            # Limpiar lista
+            self.eventos.clear()
+            messagebox.showinfo("¡Listo!", "¡Agenda completamente limpia! 🧹")
 
 
 def main():
+    """Ejecuta la aplicación"""
     root = tk.Tk()
-    app = AgendaGUI(root)
+    app = AgendaPersonal(root)
     root.mainloop()
 
 
